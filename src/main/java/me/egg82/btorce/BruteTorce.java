@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 import me.egg82.btorce.core.Proxy;
+import me.egg82.btorce.core.TorClientWrapper;
 import me.egg82.btorce.services.CachedConfigValues;
 import me.egg82.btorce.services.Configuration;
 import me.egg82.btorce.utils.ConfigurationFileUtil;
@@ -23,8 +24,8 @@ public class BruteTorce {
 
     private final File currentDirectory;
 
-    private final List<TorClient> loadingClients = new ArrayList<>();
-    private final List<TorClient> readyClients = new ArrayList<>();
+    private final List<TorClientWrapper> loadingClients = new ArrayList<>();
+    private final List<TorClientWrapper> readyClients = new ArrayList<>();
     private Proxy proxy;
 
     public BruteTorce(File currentDirectory) {
@@ -58,32 +59,23 @@ public class BruteTorce {
         int clients = config.getNode("tor", "connections").getInt(10);
         for (int i = 0; i < clients; i++) {
             int port = getPort();
-            logger.info("Client " + i + " SOCKS port: " + port);
-            TorClient client = TorUtil.getClient(i, port, currentDirectory);
+            logger.info("[" + i + "]: SOCKS at " + port);
+            TorClientWrapper client = new TorClientWrapper(i, port, currentDirectory);
             loadingClients.add(client);
 
             final int clientNum = i;
 
-            client.addInitializationListener(new TorInitializationListener() {
+            client.getClient().addInitializationListener(new TorInitializationListener() {
                 public void initializationProgress(String message, int percent) {
                     if (cachedConfig.getDebug()) {
                         logger.debug("[" + clientNum + "] [" + percent + "%]: " + message);
                     }
                 }
                 public void initializationCompleted() {
-                    logger.info("Circuit for client " + clientNum + " complete!");
+                    logger.info("[" + clientNum + "]: Circuit complete!");
 
                     loadingClients.remove(client);
                     readyClients.add(client);
-
-                    //CompletableFuture.runAsync(() -> getIP(clientNum, client));
-
-                    /*CompletableFuture.runAsync(() -> getIP(clientNum, client))
-                            .thenRunAsync(() -> getIP(clientNum, client))
-                            .thenRunAsync(() -> getIP(clientNum, client))
-                            .thenRunAsync(() -> getIP(clientNum, client))
-                            .thenRunAsync(() -> getIP(clientNum, client))
-                            .thenRunAsync(() -> getIP(clientNum, client));*/
                 }
             });
         }
@@ -92,8 +84,8 @@ public class BruteTorce {
     private void start() {
         logger.info("Staring Tor..");
 
-        for (TorClient client : loadingClients) {
-            client.start();
+        for (TorClientWrapper client : loadingClients) {
+            client.getClient().start();
         }
 
         logger.info("Waiting for all clients to start..");
@@ -139,24 +131,6 @@ public class BruteTorce {
         } while (!available(port));
         return port;
     }
-
-    /*private void getIP(int clientNum, TorClient client) {
-        try {
-            Socket socket = client.getSocketFactory().createSocket("icanhazip.com", 80);
-            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            writer.println("GET /");
-            StringBuilder builder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-            logger.info("Client " + clientNum + " IP: " + builder.toString());
-            socket.close();
-        } catch (IOException ex) {
-            logger.error(ex.getMessage(), ex);
-        }
-    }*/
 
     private static int fairRoundedRandom(int min, int max) {
         int num;

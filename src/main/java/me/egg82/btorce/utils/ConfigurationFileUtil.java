@@ -45,17 +45,14 @@ public class ConfigurationFileUtil {
         CachedConfigValues cachedValues = CachedConfigValues.builder()
                 .debug(debug)
                 .timeout(config.getNode("tor", "timeout").getInt(20))
+                .maxUse(config.getNode("tor", "max-use").getInt(5))
                 .build();
 
         if (debug) {
-            /*logger.debug("Sharding: " + config.getNode("discord", "sharding", "enabled").getBoolean(false));
-            if (config.getNode("discord", "sharding", "enabled").getBoolean(false)) {
-                logger.debug("Sharding index: " + config.getNode("discord", "sharding", "index").getInt(0));
-                logger.debug("Sharding count: " + config.getNode("discord", "sharding", "count").getInt(1000));
-            }
-
-            logger.debug("Command prefix: \"" + cachedValues.getCommandConfig().getPrefix() + "\"");
-            logger.debug("Commands from bots ignored: " + cachedValues.getCommandConfig().getIgnoreBots());*/
+            logger.debug("Connections: " + config.getNode("tor", "connections").getInt(10));
+            logger.debug("Timeout: " + cachedValues.getTimeout());
+            logger.debug("Max-Use: " + cachedValues.getMaxUse());
+            logger.debug("Listen port: " + config.getNode("tor", "port").getInt(13860));
         }
 
         ServiceLocator.register(config);

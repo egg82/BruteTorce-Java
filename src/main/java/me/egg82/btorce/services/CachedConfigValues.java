@@ -9,6 +9,9 @@ public class CachedConfigValues {
     private int timeout = 20;
     public int getTimeout() { return timeout; }
 
+    private int maxUse = 5;
+    public int getMaxUse() { return maxUse; }
+
     public static CachedConfigValues.Builder builder() { return new CachedConfigValues.Builder(); }
 
     public static class Builder {
@@ -27,6 +30,15 @@ public class CachedConfigValues {
             }
 
             values.timeout = value;
+            return this;
+        }
+
+        public CachedConfigValues.Builder maxUse(int value) {
+            if (value < 0) {
+                throw new IllegalArgumentException("value cannot be < 0");
+            }
+
+            values.maxUse = value;
             return this;
         }
 
