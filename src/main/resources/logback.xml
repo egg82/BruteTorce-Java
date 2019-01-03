@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%d{HH:mm:ss}] [%logger] [%p] - %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="Error" class="me.egg82.btorce.logging.ErrorAppender">
+        <!--<encoder>
+            <pattern>%d{HH:mm:ss.SSS}  %-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>-->
+    </appender>
+
+    <logger name="me.egg82.btorce">
+        <appender-ref ref="Error"/>
+    </logger>
+
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

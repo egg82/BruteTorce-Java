@@ -1,0 +1,15 @@
+# When true, logs some extra output to the console so you can see if/why things might be failing
+debug: false
+
+tor:
+  # The number of connections to use at once
+  connections: 10
+  # The maximum number of times each connection can be used before its circuit is re-created
+  max-use: 5
+  # The port to listen on for the forwarding proxy
+  port: 13860
+  # The amount of time, in seconds, to wait for the remote before timing out
+  timeout: 20
+
+# Config version, no touchy plz
+version: 1.0
