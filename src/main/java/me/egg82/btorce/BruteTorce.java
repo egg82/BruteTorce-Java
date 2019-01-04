@@ -6,14 +6,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
-import java.util.ArrayList;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import me.egg82.btorce.core.Proxy;
 import me.egg82.btorce.core.TorClientWrapper;
 import me.egg82.btorce.services.CachedConfigValues;
 import me.egg82.btorce.services.Configuration;
 import me.egg82.btorce.utils.ConfigurationFileUtil;
-import me.egg82.btorce.utils.TorUtil;
 import ninja.egg82.service.ServiceLocator;
 import ninja.egg82.service.ServiceNotFoundException;
 import org.slf4j.Logger;
@@ -24,14 +24,15 @@ public class BruteTorce {
 
     private final File currentDirectory;
 
-    private final List<TorClientWrapper> loadingClients = new ArrayList<>();
-    private final List<TorClientWrapper> readyClients = new ArrayList<>();
+    private final List<TorClientWrapper> loadingClients = new CopyOnWriteArrayList<>();
+    private final List<TorClientWrapper> readyClients = new CopyOnWriteArrayList<>();
     private Proxy proxy;
 
     public BruteTorce(File currentDirectory) {
         this.currentDirectory = currentDirectory;
 
         loadServices();
+        loadMaster();
         loadTor();
 
         start();
@@ -40,6 +41,38 @@ public class BruteTorce {
     private void loadServices() {
         logger.info("Loading services..");
         ConfigurationFileUtil.reloadConfig(currentDirectory);
+    }
+
+    private void loadMaster() {
+        logger.info("Loading master cache..");
+
+        File masterDir = new File(currentDirectory, "cache-master");
+        if (masterDir.exists() && masterDir.isFile()) {
+            try {
+                Files.delete(masterDir.toPath());
+            } catch (IOException ex) {
+                logger.error(ex.getMessage(), ex);
+                return;
+            }
+        }
+
+        if (!masterDir.exists()) {
+            int port = getPort();
+
+            TorClient client = new TorClient();
+            client.getConfig().setDataDirectory(masterDir);
+            client.disableDashboard();
+            client.enableSocksListener(port);
+            client.start();
+
+            try {
+                client.waitUntilReady();
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+
+            client.stop();
+        }
     }
 
     // https://stackoverflow.com/questions/29171643/java-tor-lib-how-to-setup-orchid-tor-lib-with-java

@@ -226,11 +226,11 @@ public class RequestHandler {
             tor.close();
             socket.close();
         } catch (SocketException ex) {
-            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset")) {
+            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset") && !ex.getMessage().endsWith("recv failed") && !ex.getMessage().endsWith("socket write error")) {
                 logger.error(ex.getMessage(), ex);
             }
         } catch (IOException ex) {
-            if (!ex.getMessage().endsWith("stream closed")) {
+            if (!ex.getMessage().endsWith("stream closed") && !ex.getMessage().equals("Stream closed")) {
                 logger.error(ex.getMessage(), ex);
             }
 
@@ -252,11 +252,11 @@ public class RequestHandler {
                 to.flush();
             }
         } catch (SocketException ex) {
-            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset")) {
+            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset") && !ex.getMessage().endsWith("recv failed") && !ex.getMessage().endsWith("socket write error")) {
                 logger.error("[Socket] " + ex.getMessage(), ex);
             }
         } catch (IOException ex) {
-            if (!ex.getMessage().endsWith("stream closed")) {
+            if (!ex.getMessage().endsWith("stream closed") && !ex.getMessage().equals("Stream closed")) {
                 logger.error("[Socket] " + ex.getMessage(), ex);
             }
         }
@@ -284,8 +284,8 @@ public class RequestHandler {
 
                 for (int i = 0; i < bytesRead; i++) {
                     if (buffer[i] == '\n') {
-                        to.write(buffer, 0, i);
-                        to.flush();
+                        //to.write(buffer, 0, i);
+                        //to.flush();
 
                         stringBuffer.write(buffer, 0, i + 1);
                         done = true;
@@ -297,23 +297,32 @@ public class RequestHandler {
                     if (cachedConfig.getDebug()) {
                         logger.debug("[SSL] " + line.substring(0, line.length() - 2));
                     }
-                    stringBuffer.reset();
                     break;
                 } else {
-                    to.write(buffer, 0, bytesRead);
-                    to.flush();
+                    //to.write(buffer, 0, bytesRead);
+                    //to.flush();
                     stringBuffer.write(buffer, 0, bytesRead);
                 }
             }
 
+            String header = new String(stringBuffer.toByteArray(), Charset.forName("ASCII"));
+            String[] exploded = header.split("\\s+");
+            if (exploded.length >= 1) {
+                header = exploded[0] + " 200 OK\r\n";
+                if (cachedConfig.getDebug()) {
+                    logger.debug("[SSL] Forwarding new header: " + header.substring(0, header.length() - 2));
+                }
+            }
+            to.write(header.getBytes(Charset.forName("ASCII")));
+
             to.write("Proxy-agent: ProxyServer/1.0\r\n\r\n".getBytes(Charset.forName("ASCII")));
             to.flush();
         } catch (SocketException ex) {
-            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset")) {
+            if (!ex.getMessage().equals("Socket closed") && !ex.getMessage().equals("Connection reset") && !ex.getMessage().endsWith("recv failed") && !ex.getMessage().endsWith("socket write error")) {
                 logger.error("[SSL] " + ex.getMessage(), ex);
             }
         } catch (IOException ex) {
-            if (!ex.getMessage().endsWith("stream closed")) {
+            if (!ex.getMessage().endsWith("stream closed") && !ex.getMessage().equals("Stream closed")) {
                 logger.error("[SSL] " + ex.getMessage(), ex);
             }
         }
